@@ -1,95 +1,52 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
-from config.settings import (
-    FREE_QUERY_LIMIT, MODES, UPGRADE_CREDITS, UPGRADE_PRICE_PKR, 
-    JAZZCASH_NUMBER, EASYPAISA_NUMBER, WHATSAPP_NUMBER
-)
-from components.admin import render_admin_panel
+from database.db import get_chats_for_user, create_chat
 
 def render_sidebar(conn, credits_left):
-    """Renders the professional enterprise SaaS sidebar."""
     with st.sidebar:
-        st.markdown("""
-            <div class="sidebar-logo animate-fade-in">
-                ⚖️ Pak Law AI
-            </div>
-        """, unsafe_allow_html=True)
-
+        st.markdown("<div class='sidebar-logo animate-fade-in'>⚖️ Pak Law AI</div>", unsafe_allow_html=True)
+        
+        # New Chat System
         if st.button("➕ New Conversation", type="primary", use_container_width=True):
-            st.session_state.messages_by_mode = {m: [] for m in MODES}
+            st.session_state.current_chat_id = None
+            st.session_state.messages_by_mode = [] # Clear current view
             st.rerun()
-            
-        st.markdown("<br>", unsafe_allow_html=True)
 
-        capped_credits = max(credits_left, 0)
-        # Denominator scales up automatically for anyone who claimed the
-        # +5 bonus banner (5 -> 10 total), instead of capping visually at
-        # the base FREE_QUERY_LIMIT.
-        progress_max = max(FREE_QUERY_LIMIT, capped_credits)
-        progress_val = capped_credits / progress_max if progress_max else 0
-        
         st.markdown(f"""
-            <div class="credit-card">
+            <div class="credit-card" style="margin-top: 1rem;">
                 <div class="credit-title">Available Credits</div>
-                <div class="credit-value">{capped_credits}</div>
+                <div class="credit-value">{max(credits_left, 0)}</div>
             </div>
         """, unsafe_allow_html=True)
-        st.progress(progress_val)
         
-        if credits_left <= 0:
-            st.error("Free limit reached. Upgrade required.")
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        st.markdown("<span style='color:#64748B; font-size:0.75rem; font-weight:600; text-transform:uppercase; padding-left:10px; letter-spacing:0.05em;'>AI Tools</span>", unsafe_allow_html=True)
+        st.markdown("<hr style='margin: 1rem 0; border-color: #E5E7EB;'>", unsafe_allow_html=True)
         
+        # Main Navigation
         app_mode = option_menu(
-            menu_title=None,
-            options=MODES,
-            icons=['chat-left-text', 'file-earmark-text', 'envelope-paper'],
-            default_index=MODES.index(st.session_state.get("last_mode", MODES[0])) if "last_mode" in st.session_state else 0,
+            menu_title="WORKSPACE",
+            options=["Legal Q&A", "Drafting", "Analysis", "Bookmarks", "Profile", "Settings"],
+            icons=['chat-left-text', 'file-earmark-text', 'search', 'bookmark', 'person', 'gear'],
+            default_index=0,
             styles={
-                "container": {"padding": "0!important", "background-color": "#FFFFFF"},
-                "icon": {"color": "#64748B", "font-size": "15px"}, 
-                "nav-link": {"font-size": "13.5px", "text-align": "left", "margin":"4px 0", "color": "#1E293B", "border-radius": "6px", "background-color": "#FFFFFF"},
-                "nav-link-selected": {"background-color": "#F1F5F9", "color": "#0F172A", "font-weight": "600", "icon-color": "#0F172A"},
+                "menu-title": {"font-size": "12px", "color": "#6B7280", "font-weight": "600"},
+                "container": {"padding": "0!important", "background-color": "transparent"},
+                "icon": {"color": "#6B7280", "font-size": "16px"}, 
+                "nav-link": {"font-size": "14px", "margin":"5px 0", "color": "#111827"},
+                "nav-link-selected": {"background-color": "#E0F2FE", "color": "#0F766E", "font-weight": "600"},
             }
         )
-        st.session_state.last_mode = app_mode
 
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        with st.expander("💳 Upgrade Plan"):
-            st.markdown(f"""
-                <div style="font-size:0.85rem; color:#475569; margin-bottom:10px;">
-                    Get <b>{UPGRADE_CREDITS} queries</b> for just <b>Rs. {UPGRADE_PRICE_PKR}</b>.
-                </div>
-                <div style="background:#F8FAFC; padding:10px; border:1px solid #E2E8F0; border-radius:6px; font-family:monospace; font-size:0.8rem; margin-bottom:10px; color:#334155;">
-                    JazzCash: {JAZZCASH_NUMBER}<br>
-                    Easypaisa: {EASYPAISA_NUMBER}
-                </div>
-            """, unsafe_allow_html=True)
-            user_id = st.session_state.get("user_id", "")
-            st.link_button(
-                "Verify via WhatsApp",
-                f"https://wa.me/{WHATSAPP_NUMBER}?text=Hi%2C%20I%20paid%20for%20Pak%20Law%20AI%20credits.%20My%20ID%3A%20{user_id}",
-                use_container_width=True
-            )
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        st.markdown("<span style='color:#64748B; font-size:0.75rem; font-weight:600; text-transform:uppercase; padding-left:10px; letter-spacing:0.05em;'>Recent Activity</span>", unsafe_allow_html=True)
-        if not st.session_state.get("history_titles"):
-            st.markdown("<div style='padding-left:10px; color:#94A3B8; font-size:0.85rem; margin-top:4px;'>No recent queries.</div>", unsafe_allow_html=True)
-        else:
-            for title in reversed(st.session_state.history_titles[-5:]):
-                clean_title = title.split("] ")[-1]
-                st.markdown(f"""
-                    <div style="padding: 6px 10px; font-size: 0.85rem; color: #475569; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        <span style="opacity:0.5; margin-right:6px;">💬</span> {clean_title}
-                    </div>
-                """, unsafe_allow_html=True)
-
-        render_admin_panel(conn)
+        st.markdown("<hr style='margin: 1rem 0; border-color: #E5E7EB;'>", unsafe_allow_html=True)
         
+        # Persistent Chat History
+        st.markdown("<span style='color:#6B7280; font-size:12px; font-weight:600;'>RECENT CHATS</span>", unsafe_allow_html=True)
+        recent_chats = get_chats_for_user(conn, st.session_state.user["id"])
+        
+        for chat_id, title, mode, is_pinned in recent_chats[:10]:
+            icon = "📌" if is_pinned else "💬"
+            if st.button(f"{icon} {title[:25]}...", key=f"hist_{chat_id}", use_container_width=True):
+                st.session_state.current_chat_id = chat_id
+                st.session_state.current_mode = mode
+                st.rerun()
+
     return app_mode

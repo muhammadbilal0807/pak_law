@@ -1,3 +1,8 @@
 streamlit
 google-genai
 streamlit-option-menu
+bcrypt
+fpdf
+python-docx
+PyPDF2
+gTTS
