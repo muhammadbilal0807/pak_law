@@ -4,7 +4,7 @@ from utils.validators import sanitize_user_id
 from database.db import get_all_users, add_credits
 
 def render_admin_panel(conn):
-    """Renders the admin panel inside the sidebar with premium styling."""
+    """Renders the admin panel inside the sidebar with minimalist styling."""
     st.markdown("<br>", unsafe_allow_html=True)
     with st.expander("⚙️ Workspace Admin"):
         pw = st.text_input("Admin password", type="password", key="admin_pw")

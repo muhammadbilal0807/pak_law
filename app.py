@@ -35,7 +35,6 @@ if "preset_prompt" not in st.session_state:
 conn = get_db()
 client = get_client()
 
-# Log a page view once per browser session
 if "has_logged_view" not in st.session_state:
     conn.execute("INSERT INTO page_views (timestamp) VALUES (?)", (datetime.now(timezone.utc).isoformat(),))
     conn.commit()
@@ -44,7 +43,6 @@ if "has_logged_view" not in st.session_state:
 # =====================================================================
 # 4. ONBOARDING
 # =====================================================================
-# Will halt execution if user is not authenticated, presenting the sleek SaaS login card.
 render_onboarding()
 
 # =====================================================================
@@ -53,9 +51,7 @@ render_onboarding()
 user_id = st.session_state.user_id
 credits_left = remaining_credits(conn, user_id)
 
-# Render premium sidebar
 app_mode = render_sidebar(conn, credits_left)
 
-# Render main workspace
 render_header(app_mode)
 render_chat(app_mode, conn, client, credits_left)
