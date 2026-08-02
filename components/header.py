@@ -10,10 +10,10 @@ def render_header(app_mode):
     st.markdown(f"""
         <div class="top-nav animate-fade-in">
             <div class="nav-title">
-                {app_mode} <span style="color:#6B7280; font-weight:400; font-size:0.9rem;">| Pak Law AI Workspace</span>
+                {app_mode} <span style="color:#94A3B8; font-weight:400; font-size:0.9rem;">| Pak Law AI Workspace</span>
             </div>
             <div style="display: flex; align-items: center; gap: 15px;">
-                <div style="color: #6B7280; cursor: pointer;">🔔</div>
+                <div style="color: #64748B; cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='#0F172A'" onmouseout="this.style.color='#64748B'">🔔</div>
                 <div class="nav-profile">{user_initial}</div>
             </div>
         </div>

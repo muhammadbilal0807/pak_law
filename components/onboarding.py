@@ -9,10 +9,10 @@ def render_onboarding():
         with col2:
             st.markdown("""
                 <div class="onboarding-card animate-fade-in">
-                    <div style="text-align: center; margin-bottom: 2rem;">
-                        <div style="font-size: 3rem; margin-bottom: 1rem;">⚖️</div>
-                        <h2 style="font-weight: 700; color: #111827; margin-bottom: 0.5rem;">Welcome to Pak Law AI</h2>
-                        <p style="color: #6B7280; font-size: 1rem;">
+                    <div style="text-align: center; margin-bottom: 2.5rem;">
+                        <div style="font-size: 3.5rem; margin-bottom: 1rem;">⚖️</div>
+                        <h2 style="font-weight: 700; color: #0F172A; margin-bottom: 0.5rem; font-size: 1.8rem;">Welcome to Pak Law AI</h2>
+                        <p style="color: #64748B; font-size: 1.05rem;">
                             The definitive legal assistant for Pakistani law.
                         </p>
                     </div>
@@ -21,8 +21,9 @@ def render_onboarding():
             st.info(f"✨ Start with **{FREE_QUERY_LIMIT} free queries**. No credit card required.")
             
             with st.form("onboarding_form"):
-                st.markdown("**Account Setup**")
-                raw_id = st.text_input("Email or WhatsApp Number", placeholder="e.g. you@company.com or 03xx-xxxxxxx")
+                st.markdown("<p style='font-weight: 600; color: #334155; margin-bottom: 5px;'>Account Setup</p>", unsafe_allow_html=True)
+                raw_id = st.text_input("Email or WhatsApp Number", placeholder="e.g. you@company.com or 03xx-xxxxxxx", label_visibility="collapsed")
+                st.markdown("<br>", unsafe_allow_html=True)
                 submitted = st.form_submit_button("Continue to Workspace", type="primary", use_container_width=True)
                 
             if submitted and raw_id.strip():

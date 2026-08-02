@@ -1,11 +1,9 @@
 import streamlit as st
 from datetime import datetime, timezone
-
 from config.settings import PAGE_TITLE, MODES
 from css.styles import load_css
 from database.db import get_db, remaining_credits
 from services.gemini_service import get_client
-
 from components.onboarding import render_onboarding
 from components.sidebar import render_sidebar
 from components.header import render_header

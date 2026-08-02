@@ -1,7 +1,6 @@
 import time
 import streamlit as st
 from google.genai import types
-
 from config.settings import MAX_HISTORY_MESSAGES, COOLDOWN_SECONDS, MODE_MAX_TOKENS
 from services.gemini_service import get_system_instruction, call_gemini_with_retry
 from services.category_service import detect_category
@@ -11,13 +10,13 @@ from utils.markdown_utils import markdown_to_plain
 def render_hero():
     """Renders the beautiful empty-state hero screen with prompt suggestions."""
     st.markdown("""
-        <div class="animate-fade-in" style="margin-top: 2rem;">
+        <div class="animate-fade-in" style="margin-top: 3rem;">
             <div class="hero-title">Ask Anything About <span>Pakistan Law</span></div>
             <div class="hero-subtitle">Get instant, accurate legal references, statutes, and procedural steps.</div>
         </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("<div style='margin-bottom: 2rem;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-bottom: 2.5rem;'></div>", unsafe_allow_html=True)
 
     # Feature Cards / Quick Prompts
     c1, c2, c3 = st.columns(3)
@@ -56,22 +55,24 @@ def render_chat(app_mode, conn, client, credits_left):
             
             # Action Tray for Assistant Messages
             if message["role"] == "assistant":
-                st.markdown(f"""
-                    <div class="action-tray">
-                        <button title="Copy" style="background:transparent; border:none; cursor:pointer; color:#6B7280;">📋</button>
-                        <button title="Like" style="background:transparent; border:none; cursor:pointer; color:#6B7280;">👍</button>
-                        <button title="Dislike" style="background:transparent; border:none; cursor:pointer; color:#6B7280;">👎</button>
-                    </div>
-                """, unsafe_allow_html=True)
-                
-                # Native download button integrated seamlessly
-                st.download_button(
-                    "⬇️ Download Document", 
-                    markdown_to_plain(message["content"]), 
-                    file_name=f"pak_law_{app_mode.lower().replace(' ', '_')}_{i}.txt", 
-                    key=f"dl_{app_mode}_{i}",
-                    type="secondary"
-                )
+                col1, col2 = st.columns([1, 4])
+                with col1:
+                    st.markdown(f"""
+                        <div class="action-tray">
+                            <button title="Copy">📋 Copy</button>
+                            <button title="Like">👍</button>
+                            <button title="Dislike">👎</button>
+                        </div>
+                    """, unsafe_allow_html=True)
+                with col2:
+                    # Native download button integrated seamlessly
+                    st.download_button(
+                        label="⬇️ Download Document", 
+                        data=markdown_to_plain(message["content"]), 
+                        file_name=f"pak_law_{app_mode.lower().replace(' ', '_')}_{i}.txt", 
+                        key=f"dl_{app_mode}_{i}",
+                        type="secondary"
+                    )
 
     # Chat Input Zone
     user_prompt = st.chat_input("Ask anything related to Pakistan law..." if credits_left > 0 else "Limit reached. Please upgrade to continue.")
@@ -115,7 +116,7 @@ def render_chat(app_mode, conn, client, credits_left):
 
                     if app_mode == "Legal Q&A":
                         category = detect_category(user_prompt)
-                        st.markdown(f"<span style='background:#E0F2FE; color:#0369A1; padding:4px 10px; border-radius:12px; font-size:0.8rem; font-weight:600;'>🏷️ {category}</span><br><br>", unsafe_allow_html=True)
+                        st.markdown(f"<span style='background:#F1F5F9; color:#0F766E; border: 1px solid #E2E8F0; padding:4px 12px; border-radius:12px; font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;'>🏷️ {category}</span><br><br>", unsafe_allow_html=True)
                     
                     placeholder.markdown(text)
                     messages.append({"role": "assistant", "content": text})
