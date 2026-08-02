@@ -1,44 +1,61 @@
 import streamlit as st
+from datetime import datetime, timezone
+
 from config.settings import PAGE_TITLE, MODES
-from database.db import init_db
-import sqlite3
-from services.gemini_service import get_ai_response
+from css.styles import load_css
+from database.db import get_db, remaining_credits
+from services.gemini_service import get_client
 
-# Initialize the database when the app loads
-init_db()
+from components.onboarding import render_onboarding
+from components.sidebar import render_sidebar
+from components.header import render_header
+from components.chat import render_chat
 
-st.set_page_config(page_title=PAGE_TITLE, layout="centered")
+# =====================================================================
+# 1. PAGE CONFIG & STYLING
+# =====================================================================
+st.set_page_config(page_title=PAGE_TITLE, page_icon="⚖️", layout="wide", initial_sidebar_state="expanded")
+load_css()
 
-st.title("⚖️ Pak Law AI")
-st.write("Your intelligent legal assistant workspace.")
+# =====================================================================
+# 2. SESSION STATE INIT
+# =====================================================================
+if "messages_by_mode" not in st.session_state:
+    st.session_state.messages_by_mode = {m: [] for m in MODES}
+if "history_titles" not in st.session_state:
+    st.session_state.history_titles = []
+if "user_id" not in st.session_state:
+    st.session_state.user_id = st.query_params.get("uid")
+if "last_request_ts" not in st.session_state:
+    st.session_state.last_request_ts = 0.0
+if "preset_prompt" not in st.session_state:
+    st.session_state.preset_prompt = None
 
-# Sidebar mode selection
-selected_mode = st.sidebar.selectbox("Choose Mode", MODES)
+# =====================================================================
+# 3. SERVICES INIT
+# =====================================================================
+conn = get_db()
+client = get_client()
 
-# Main input area
-user_query = st.text_area("Enter your legal question or query here:")
+# Log a page view once per browser session
+if "has_logged_view" not in st.session_state:
+    conn.execute("INSERT INTO page_views (timestamp) VALUES (?)", (datetime.now(timezone.utc).isoformat(),))
+    conn.commit()
+    st.session_state.has_logged_view = True
 
-if st.button("Generate Response"):
-    if user_query.strip() == "":
-        st.warning("Please enter a question before submitting.")
-    else:
-        with st.spinner("Analyzing with Gemini..."):
-            try:
-                # Fetch response from Gemini service
-                response_text = get_ai_response(user_query)
-                
-                # Display the response
-                st.subheader("Response")
-                st.write(response_text)
+# =====================================================================
+# 4. ONBOARDING
+# =====================================================================
+# Will halt execution if user is not authenticated
+render_onboarding()
 
-                # Save the interaction to the SQLite database
-                conn = sqlite3.connect("database/pak_law.db")
-                cursor = conn.cursor()
-                cursor.execute(
-                    "INSERT INTO queries (timestamp, query, response, mode) VALUES (datetime('now'), ?, ?, ?)",
-                    (user_query, response_text, selected_mode)
-                )
-                conn.commit()
-                conn.close()
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
+# =====================================================================
+# 5. MAIN APPLICATION
+# =====================================================================
+user_id = st.session_state.user_id
+credits_left = remaining_credits(conn, user_id)
+
+app_mode = render_sidebar(conn, credits_left)
+
+render_header()
+render_chat(app_mode, conn, client, credits_left)
