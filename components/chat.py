@@ -1,97 +1,130 @@
+import time
 import streamlit as st
-from streamlit_option_menu import option_menu
-from config.settings import (
-    FREE_QUERY_LIMIT, MODES, UPGRADE_CREDITS, UPGRADE_PRICE_PKR, 
-    JAZZCASH_NUMBER, EASYPAISA_NUMBER, WHATSAPP_NUMBER
-)
-from components.admin import render_admin_panel
+from google.genai import types
 
-def render_sidebar(conn, credits_left):
-    """Renders the premium SaaS navigation panel."""
-    with st.sidebar:
-        # App Logo & Name
-        st.markdown("""
-            <div class="sidebar-logo animate-fade-in">
-                ⚖️ Pak Law AI
-            </div>
-        """, unsafe_allow_html=True)
+from config.settings import MAX_HISTORY_MESSAGES, COOLDOWN_SECONDS, MODE_MAX_TOKENS
+from services.gemini_service import get_system_instruction, call_gemini_with_retry
+from services.category_service import detect_category
+from database.db import spend_credit
+from utils.markdown_utils import markdown_to_plain
 
-        # New Chat Button
-        if st.button("➕ New Conversation", type="primary", use_container_width=True):
-            st.session_state.messages_by_mode = {m: [] for m in MODES}
-            st.rerun()
+def render_hero():
+    """Renders the beautiful empty-state hero screen with prompt suggestions."""
+    st.markdown("""
+        <div class="animate-fade-in" style="margin-top: 2rem;">
+            <div class="hero-title">Ask Anything About <span>Pakistan Law</span></div>
+            <div class="hero-subtitle">Get instant, accurate legal references, statutes, and procedural steps.</div>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<div style='margin-bottom: 2rem;'></div>", unsafe_allow_html=True)
+
+    # Feature Cards / Quick Prompts
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if st.button("🚔 Criminal Law\n\nWhat are my rights upon arrest in Pakistan under the CrPC?"):
+            st.session_state.preset_prompt = "What are my fundamental rights upon arrest under the CrPC?"
+        if st.button("💻 Cyber Crime\n\nWhat is the punishment for online harassment under PECA?"):
+            st.session_state.preset_prompt = "What is the punishment for online harassment and blackmailing under PECA?"
+    with c2:
+        if st.button("👨‍👩‍👧 Family Law\n\nExplain the procedure for Khula and child custody."):
+            st.session_state.preset_prompt = "Explain the legal procedure for Khula and child custody in Pakistan."
+        if st.button("🏠 Property Law\n\nHow do I evict a tenant who refuses to pay rent?"):
+            st.session_state.preset_prompt = "Under rent control laws, how do I legally evict a defaulting tenant?"
+    with c3:
+        if st.button("🏛️ Constitution\n\nWhat are the fundamental rights guaranteed by the Constitution?"):
+            st.session_state.preset_prompt = "What are the fundamental rights guaranteed by the Constitution of Pakistan 1973?"
+        if st.button("💼 Labour Law\n\nWhat is the legal process for wrongful termination?"):
+            st.session_state.preset_prompt = "What are the legal remedies for wrongful termination of an employee?"
             
-        st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-bottom: 4rem;'></div>", unsafe_allow_html=True)
 
-        # Custom Credit Card UI
-        capped_credits = max(credits_left, 0)
-        progress_val = min(capped_credits, FREE_QUERY_LIMIT) / FREE_QUERY_LIMIT if capped_credits <= FREE_QUERY_LIMIT else 1.0
-        
-        st.markdown(f"""
-            <div class="credit-card">
-                <div class="credit-title">Available Credits</div>
-                <div class="credit-value">{capped_credits}</div>
-            </div>
-        """, unsafe_allow_html=True)
-        st.progress(progress_val)
-        
-        if credits_left <= 0:
-            st.error("Free limit reached. Upgrade required.")
+def render_chat(app_mode, conn, client, credits_left):
+    """Renders the chat interface and handles Gemini API interactions."""
+    messages = st.session_state.messages_by_mode[app_mode]
+    user_id = st.session_state.user_id
 
-        st.markdown("<br>", unsafe_allow_html=True)
+    # Empty State Hero
+    if len(messages) == 0 and app_mode == "Legal Q&A":
+        render_hero()
 
-        # Premium Navigation Menu using option_menu
-        st.markdown("<span style='color:#6B7280; font-size:0.8rem; font-weight:600; text-transform:uppercase; padding-left:10px;'>AI Tools</span>", unsafe_allow_html=True)
-        
-        app_mode = option_menu(
-            menu_title=None,
-            options=MODES,
-            icons=['chat-left-text', 'file-earmark-text', 'envelope-paper'],
-            default_index=MODES.index(st.session_state.get("last_mode", MODES[0])) if "last_mode" in st.session_state else 0,
-            styles={
-                "container": {"padding": "0!important", "background-color": "transparent"},
-                "icon": {"color": "#6B7280", "font-size": "16px"}, 
-                "nav-link": {"font-size": "14px", "text-align": "left", "margin":"5px 0", "color": "#111827", "border-radius": "10px"},
-                "nav-link-selected": {"background-color": "#E0F2FE", "color": "#0F766E", "font-weight": "600", "icon-color": "#0F766E"},
-            }
-        )
-        st.session_state.last_mode = app_mode
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # Upgrade Section
-        with st.expander("💳 Upgrade Plan"):
-            st.markdown(f"""
-                <div style="font-size:0.9rem; color:#4B5563; margin-bottom:10px;">
-                    Get <b>{UPGRADE_CREDITS} queries</b> for just <b>Rs. {UPGRADE_PRICE_PKR}</b>.
-                </div>
-                <div style="background:#F3F4F6; padding:10px; border-radius:8px; font-family:monospace; font-size:0.85rem; margin-bottom:10px;">
-                    JazzCash: {JAZZCASH_NUMBER}<br>
-                    Easypaisa: {EASYPAISA_NUMBER}
-                </div>
-            """, unsafe_allow_html=True)
-            user_id = st.session_state.get("user_id", "")
-            st.link_button(
-                "Verify via WhatsApp",
-                f"https://wa.me/{WHATSAPP_NUMBER}?text=Hi%2C%20I%20paid%20for%20Pak%20Law%20AI%20credits.%20My%20ID%3A%20{user_id}",
-                use_container_width=True
-            )
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # Recent Queries
-        st.markdown("<span style='color:#6B7280; font-size:0.8rem; font-weight:600; text-transform:uppercase; padding-left:10px;'>Recent Activity</span>", unsafe_allow_html=True)
-        if not st.session_state.get("history_titles"):
-            st.markdown("<div style='padding-left:10px; color:#9CA3AF; font-size:0.9rem;'>No recent queries.</div>", unsafe_allow_html=True)
-        else:
-            for title in reversed(st.session_state.history_titles[-5:]):
-                clean_title = title.split("] ")[-1] # Remove the [Mode] prefix for cleaner UI
+    # Render Chat History
+    for i, message in enumerate(messages):
+        avatar = "👤" if message["role"] == "user" else "⚖️"
+        with st.chat_message(message["role"], avatar=avatar):
+            st.markdown(message["content"])
+            
+            # Action Tray for Assistant Messages
+            if message["role"] == "assistant":
                 st.markdown(f"""
-                    <div style="padding: 8px 10px; font-size: 0.9rem; color: #4B5563; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        <span style="opacity:0.5; margin-right:5px;">💬</span> {clean_title}
+                    <div class="action-tray">
+                        <button title="Copy" style="background:transparent; border:none; cursor:pointer; color:#6B7280;">📋</button>
+                        <button title="Like" style="background:transparent; border:none; cursor:pointer; color:#6B7280;">👍</button>
+                        <button title="Dislike" style="background:transparent; border:none; cursor:pointer; color:#6B7280;">👎</button>
                     </div>
                 """, unsafe_allow_html=True)
+                
+                # Native download button integrated seamlessly
+                st.download_button(
+                    "⬇️ Download Document", 
+                    markdown_to_plain(message["content"]), 
+                    file_name=f"pak_law_{app_mode.lower().replace(' ', '_')}_{i}.txt", 
+                    key=f"dl_{app_mode}_{i}",
+                    type="secondary"
+                )
 
-        render_admin_panel(conn)
-        
-    return app_mode
+    # Chat Input Zone
+    user_prompt = st.chat_input("Ask anything related to Pakistan law..." if credits_left > 0 else "Limit reached. Please upgrade to continue.")
+    
+    if st.session_state.get("preset_prompt"):
+        user_prompt = st.session_state.preset_prompt
+        st.session_state.preset_prompt = None
+
+    if user_prompt:
+        if credits_left <= 0:
+            st.error("🔒 Free Limit Reached. Please upgrade your plan in the sidebar.")
+            st.stop()
+
+        if time.time() - st.session_state.last_request_ts < COOLDOWN_SECONDS:
+            st.toast("⏳ Please wait a moment before sending another message.", icon="✋")
+            st.stop()
+
+        if len(messages) == 0:
+            title = user_prompt[:22] + "..." if len(user_prompt) > 22 else user_prompt
+            st.session_state.history_titles.append(f"[{app_mode}] {title}")
+
+        st.chat_message("user", avatar="👤").markdown(user_prompt)
+        messages.append({"role": "user", "content": user_prompt})
+        st.session_state.last_request_ts = time.time()
+
+        recent_messages = messages[-MAX_HISTORY_MESSAGES:]
+        formatted_contents = [
+            types.Content(role="user" if m["role"] == "user" else "model", parts=[types.Part.from_text(text=m["content"])])
+            for m in recent_messages
+        ]
+
+        system_instruction = get_system_instruction(app_mode)
+        max_tokens = MODE_MAX_TOKENS[app_mode]
+
+        # Call AI Assistant
+        with st.chat_message("assistant", avatar="⚖️"):
+            placeholder = st.empty()
+            with st.spinner("Analyzing legal statutes and drafting response..."):
+                try:
+                    text, used_model = call_gemini_with_retry(client, formatted_contents, system_instruction, max_tokens)
+
+                    if app_mode == "Legal Q&A":
+                        category = detect_category(user_prompt)
+                        st.markdown(f"<span style='background:#E0F2FE; color:#0369A1; padding:4px 10px; border-radius:12px; font-size:0.8rem; font-weight:600;'>🏷️ {category}</span><br><br>", unsafe_allow_html=True)
+                    
+                    placeholder.markdown(text)
+                    messages.append({"role": "assistant", "content": text})
+                    spend_credit(conn, user_id, 1)
+                    
+                    # Force a rerun to render action buttons properly below the new message
+                    st.rerun()
+
+                except RuntimeError:
+                    placeholder.error(
+                        "⚠️ The server is experiencing high traffic. Please try again in 30 seconds."
+                    )
