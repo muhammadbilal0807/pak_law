@@ -46,7 +46,7 @@ if "has_logged_view" not in st.session_state:
 # =====================================================================
 # 4. ONBOARDING
 # =====================================================================
-# Will halt execution if user is not authenticated
+# Will halt execution if user is not authenticated, presenting the sleek SaaS login card.
 render_onboarding()
 
 # =====================================================================
@@ -55,7 +55,9 @@ render_onboarding()
 user_id = st.session_state.user_id
 credits_left = remaining_credits(conn, user_id)
 
+# Render premium sidebar
 app_mode = render_sidebar(conn, credits_left)
 
-render_header()
+# Render main workspace
+render_header(app_mode)
 render_chat(app_mode, conn, client, credits_left)

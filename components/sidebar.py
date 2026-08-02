@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_option_menu import option_menu
 from config.settings import (
     FREE_QUERY_LIMIT, MODES, UPGRADE_CREDITS, UPGRADE_PRICE_PKR, 
     JAZZCASH_NUMBER, EASYPAISA_NUMBER, WHATSAPP_NUMBER
@@ -6,49 +7,90 @@ from config.settings import (
 from components.admin import render_admin_panel
 
 def render_sidebar(conn, credits_left):
-    """Renders the full sidebar and returns the selected app mode."""
+    """Renders the premium SaaS navigation panel."""
     with st.sidebar:
-        st.title("⚖️ Pak Law AI")
+        # App Logo & Name
+        st.markdown("""
+            <div class="sidebar-logo animate-fade-in">
+                ⚖️ Pak Law AI
+            </div>
+        """, unsafe_allow_html=True)
 
-        # Progress bar safely capped
-        progress_val = min(max(credits_left, 0), FREE_QUERY_LIMIT) / FREE_QUERY_LIMIT if credits_left <= FREE_QUERY_LIMIT else 1.0
-        st.progress(progress_val)
-        st.caption(f"Credits left: {max(credits_left, 0)}")
-
-        if credits_left <= 0:
-            st.error(f"Free limit reached. Buy {UPGRADE_CREDITS} more credits for Rs {UPGRADE_PRICE_PKR}.")
-
-        st.divider()
-
-        if st.button("➕ New Chat"):
+        # New Chat Button
+        if st.button("➕ New Conversation", type="primary", use_container_width=True):
             st.session_state.messages_by_mode = {m: [] for m in MODES}
             st.rerun()
+            
+        st.markdown("<br>", unsafe_allow_html=True)
 
-        st.markdown("### 🛠️ AI Tools")
-        app_mode = st.radio("Select Mode:", MODES, key="app_mode_radio")
+        # Custom Credit Card UI
+        capped_credits = max(credits_left, 0)
+        progress_val = min(capped_credits, FREE_QUERY_LIMIT) / FREE_QUERY_LIMIT if capped_credits <= FREE_QUERY_LIMIT else 1.0
+        
+        st.markdown(f"""
+            <div class="credit-card">
+                <div class="credit-title">Available Credits</div>
+                <div class="credit-value">{capped_credits}</div>
+            </div>
+        """, unsafe_allow_html=True)
+        st.progress(progress_val)
+        
+        if credits_left <= 0:
+            st.error("Free limit reached. Upgrade required.")
 
-        st.divider()
-        with st.expander("💳 Buy More Credits"):
-            st.write(
-                f"Send **Rs. {UPGRADE_PRICE_PKR}** for {UPGRADE_CREDITS} credits to:\n\n"
-                f"- JazzCash: `{JAZZCASH_NUMBER}`\n"
-                f"- Easypaisa: `{EASYPAISA_NUMBER}`\n\n"
-                f"(Stripe isn't a practical option here - it doesn't support Pakistan-registered "
-                f"businesses directly.) Send the payment screenshot on WhatsApp and we'll add your credits."
-            )
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Premium Navigation Menu using option_menu
+        st.markdown("<span style='color:#6B7280; font-size:0.8rem; font-weight:600; text-transform:uppercase; padding-left:10px;'>AI Tools</span>", unsafe_allow_html=True)
+        
+        app_mode = option_menu(
+            menu_title=None,
+            options=MODES,
+            icons=['chat-left-text', 'file-earmark-text', 'envelope-paper'],
+            default_index=MODES.index(st.session_state.get("last_mode", MODES[0])) if "last_mode" in st.session_state else 0,
+            styles={
+                "container": {"padding": "0!important", "background-color": "transparent"},
+                "icon": {"color": "#6B7280", "font-size": "16px"}, 
+                "nav-link": {"font-size": "14px", "text-align": "left", "margin":"5px 0", "color": "#111827", "border-radius": "10px"},
+                "nav-link-selected": {"background-color": "#E0F2FE", "color": "#0F766E", "font-weight": "600", "icon-color": "#0F766E"},
+            }
+        )
+        st.session_state.last_mode = app_mode
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Upgrade Section
+        with st.expander("💳 Upgrade Plan"):
+            st.markdown(f"""
+                <div style="font-size:0.9rem; color:#4B5563; margin-bottom:10px;">
+                    Get <b>{UPGRADE_CREDITS} queries</b> for just <b>Rs. {UPGRADE_PRICE_PKR}</b>.
+                </div>
+                <div style="background:#F3F4F6; padding:10px; border-radius:8px; font-family:monospace; font-size:0.85rem; margin-bottom:10px;">
+                    JazzCash: {JAZZCASH_NUMBER}<br>
+                    Easypaisa: {EASYPAISA_NUMBER}
+                </div>
+            """, unsafe_allow_html=True)
             user_id = st.session_state.get("user_id", "")
             st.link_button(
-                "📲 Send screenshot on WhatsApp",
-                f"https://wa.me/{WHATSAPP_NUMBER}?text=Hi%2C%20I%20paid%20for%20Pak%20Law%20AI%20credits.%20My%20ID%3A%20{user_id}"
+                "Verify via WhatsApp",
+                f"https://wa.me/{WHATSAPP_NUMBER}?text=Hi%2C%20I%20paid%20for%20Pak%20Law%20AI%20credits.%20My%20ID%3A%20{user_id}",
+                use_container_width=True
             )
 
-        st.divider()
-        st.markdown("### 💬 Recent Queries")
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Recent Queries
+        st.markdown("<span style='color:#6B7280; font-size:0.8rem; font-weight:600; text-transform:uppercase; padding-left:10px;'>Recent Activity</span>", unsafe_allow_html=True)
         if not st.session_state.get("history_titles"):
-            st.caption("No queries yet.")
+            st.markdown("<div style='padding-left:10px; color:#9CA3AF; font-size:0.9rem;'>No recent queries.</div>", unsafe_allow_html=True)
         else:
             for title in reversed(st.session_state.history_titles[-5:]):
-                st.markdown(f"• **{title}**")
+                clean_title = title.split("] ")[-1] # Remove the [Mode] prefix for cleaner UI
+                st.markdown(f"""
+                    <div style="padding: 8px 10px; font-size: 0.9rem; color: #4B5563; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <span style="opacity:0.5; margin-right:5px;">💬</span> {clean_title}
+                    </div>
+                """, unsafe_allow_html=True)
 
         render_admin_panel(conn)
         

@@ -1,6 +1,20 @@
 import streamlit as st
 
-def render_header():
-    """Renders the main page header."""
-    st.markdown("<div class='main-header'>⚖️ Pak Law AI</div>", unsafe_allow_html=True)
-    st.markdown("<div class='sub-header'>Instant Legal Answers & Statute References for Pakistan</div>", unsafe_allow_html=True)
+def render_header(app_mode):
+    """Renders the top premium sticky navigation bar."""
+    user_initial = "👤"
+    if st.session_state.get("user_id"):
+        user_id = st.session_state.user_id
+        user_initial = user_id[0].upper() if user_id[0].isalpha() else "U"
+
+    st.markdown(f"""
+        <div class="top-nav animate-fade-in">
+            <div class="nav-title">
+                {app_mode} <span style="color:#6B7280; font-weight:400; font-size:0.9rem;">| Pak Law AI Workspace</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="color: #6B7280; cursor: pointer;">🔔</div>
+                <div class="nav-profile">{user_initial}</div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
