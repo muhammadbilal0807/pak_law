@@ -49,9 +49,9 @@ def render_sidebar(conn, credits_left):
             icons=['chat-left-text', 'file-earmark-text', 'envelope-paper'],
             default_index=MODES.index(st.session_state.get("last_mode", MODES[0])) if "last_mode" in st.session_state else 0,
             styles={
-                "container": {"padding": "0!important", "background-color": "transparent"},
+                "container": {"padding": "0!important", "background-color": "#FFFFFF"},
                 "icon": {"color": "#64748B", "font-size": "15px"}, 
-                "nav-link": {"font-size": "13.5px", "text-align": "left", "margin":"4px 0", "color": "#1E293B", "border-radius": "6px"},
+                "nav-link": {"font-size": "13.5px", "text-align": "left", "margin":"4px 0", "color": "#1E293B", "border-radius": "6px", "background-color": "#FFFFFF"},
                 "nav-link-selected": {"background-color": "#F1F5F9", "color": "#0F172A", "font-weight": "600", "icon-color": "#0F172A"},
             }
         )

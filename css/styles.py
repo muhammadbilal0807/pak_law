@@ -74,6 +74,25 @@ def load_css():
         }
 
         /* ---------------------------------------------------------
+           1d. FORCE LIGHT THEME EVERYWHERE
+           Streamlit's fixed bottom bar (which hosts st.chat_input)
+           was inheriting the dark theme background instead of our
+           light one -- that's the big black bar behind "Ask
+           anything...". color-scheme: light also stops the
+           browser/OS dark-mode preference from leaking into native
+           form controls and third-party components.
+        --------------------------------------------------------- */
+        html {
+            color-scheme: light !important;
+        }
+
+        [data-testid="stBottom"],
+        [data-testid="stBottomBlockContainer"],
+        [data-testid="stChatInputContainer"] {
+            background-color: #F8FAFC !important;
+        }
+
+        /* ---------------------------------------------------------
            2. ANIMATIONS
         --------------------------------------------------------- */
         @keyframes fadeIn {
@@ -226,14 +245,17 @@ def load_css():
         --------------------------------------------------------- */
         [data-testid="stChatInput"] {
             border-radius: 16px !important;
-            border: 1px solid #E5E7EB !important;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05) !important;
+            border: 1.5px solid #CBD5E1 !important;
+            box-shadow: 0 10px 20px -5px rgba(0,0,0,0.08) !important;
             background-color: #FFFFFF !important;
-            padding: 0.2rem !important;
+            padding: 0.3rem !important;
         }
         [data-testid="stChatInput"] textarea {
             font-size: 1rem !important;
             color: #111827 !important;
+        }
+        [data-testid="stChatInput"] textarea::placeholder {
+            color: #94A3B8 !important;
         }
 
         [data-testid="stChatMessage"] {

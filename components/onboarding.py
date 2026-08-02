@@ -27,6 +27,11 @@ def init_guest_session():
         guest_id = f"guest-{uuid.uuid4().hex[:10]}"
         st.session_state.user_id = guest_id
         st.query_params["uid"] = guest_id
+        # Force an immediate round-trip so the browser's address bar is
+        # guaranteed to hold ?uid=... before the user can refresh --
+        # otherwise a very fast refresh could catch the URL before the
+        # update lands, losing the guest id and minting a new one.
+        st.rerun()
 
 
 def _ensure_bonus_table(conn):
