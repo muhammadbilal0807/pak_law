@@ -1,3 +1,4 @@
+# app.py (COMPLETELY FIXED)
 import streamlit as st
 from datetime import datetime, timezone
 
@@ -22,6 +23,7 @@ from components.admin.admin_prompts_ai import render_admin_prompts_ai
 from components.admin.admin_analytics import render_admin_analytics
 from components.admin.admin_payments import render_admin_payments
 from components.admin.admin_system import render_admin_system
+from components.admin.admin_conversations import render_admin_conversations  # ADDED
 
 # 1. PAGE CONFIG
 st.set_page_config(page_title=PAGE_TITLE, page_icon="⚖️", layout="wide", initial_sidebar_state="expanded")
@@ -60,15 +62,19 @@ if user_role in ADMIN_ROLES:
                 st.session_state.in_admin_mode = True
                 st.rerun()
 
+# FIXED: Properly structured if-else block
 if st.session_state.in_admin_mode and user_role in ADMIN_ROLES:
     # --- ADMIN WORKSPACE ---
     load_admin_css()
     admin_tab = render_admin_sidebar()
     
+    # FIXED: Proper if-elif structure
     if admin_tab == "Overview":
         render_admin_dashboard(conn)
     elif admin_tab == "User Control":
         render_admin_user_mgmt(conn)
+    elif admin_tab == "Conversations":
+        render_admin_conversations(conn)
     elif admin_tab == "Law Database":
         render_admin_law_kb(conn, is_kb_mode=False)
     elif admin_tab == "Knowledge Base":
@@ -97,10 +103,3 @@ else:
         st.info("🔖 Bookmarks system connected to SQLite database.")
     elif app_mode == "Settings":
         st.info("⚙️ Settings: Configure preferences, theme, and data exports.")
-# app.py (UPDATED - add import and handle conversation tab)
-# Add this import at the top:
-from components.admin.admin_conversations import render_admin_conversations
-
-# In the admin routing section, add:
-elif admin_tab == "Conversations":
-    render_admin_conversations(conn)
