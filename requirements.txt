@@ -6,3 +6,5 @@ fpdf
 python-docx
 PyPDF2
 gTTS
+plotly
+pandas

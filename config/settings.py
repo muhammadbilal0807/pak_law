@@ -1,25 +1,39 @@
-# =====================================================================
-# 0. CONFIG - edit these before you launch
-# =====================================================================
-PAGE_TITLE = "Pak Law AI - Legal Assistant"
+import os
 
+PAGE_TITLE = "Pak Law AI — Enterprise Platform"
 FREE_QUERY_LIMIT = 5
-MAX_HISTORY_MESSAGES = 4     # last 2 exchanges - keeps token cost low
-COOLDOWN_SECONDS = 3         # min seconds between sends per user (anti-spam)
+COOLDOWN_SECONDS = 3.0
+MAX_HISTORY_MESSAGES = 10
 
-PRIMARY_MODEL = "gemini-3.6-flash"
-FALLBACK_MODEL = "gemini-3.5-flash-lite"
+MODES = ["Legal Q&A", "Drafting", "Analysis"]
 
-MODES = ["Legal Q&A", "Draft FIR", "Draft Legal Notice"]
-MODE_MAX_TOKENS = {"Legal Q&A": 1024, "Draft FIR": 1536, "Draft Legal Notice": 1536}
+# Pricing & Upgrade Configuration
+UPGRADE_CREDITS = 50
+UPGRADE_PRICE_PKR = 1500
+JAZZCASH_NUMBER = "0300-1234567"
+EASYPAISA_NUMBER = "0345-7654321"
+WHATSAPP_NUMBER = "923001234567"
 
-DB_PATH = "usage.db"
+# RBAC Roles
+ROLE_USER = "User"
+ROLE_MODERATOR = "Moderator"
+ROLE_ADMIN = "Admin"
+ROLE_SUPER_ADMIN = "Super Admin"
+ADMIN_ROLES = [ROLE_ADMIN, ROLE_SUPER_ADMIN]
 
-# --- Fill these in with your real details before going live ---
-JAZZCASH_NAME = "MUHAMMAD BILAL"
-JAZZCASH_NUMBER = "0303-7154605"
-EASYPAISA_NAME = "NAEEM AHMAD"
-EASYPAISA_NUMBER = "0339-4111973"
-WHATSAPP_NUMBER = "+923037154605"      # country code + number, no "+", no spaces
-UPGRADE_PRICE_PKR = 100
-UPGRADE_CREDITS = 30
+# Gemini AI Hyperparameters & Defaults
+DEFAULT_AI_CONFIG = {
+    "model_name": "gemini-2.5-flash",
+    "temperature": 0.2,
+    "top_p": 0.95,
+    "top_k": 40,
+    "max_tokens": 2048,
+    "context_window": 8192,
+    "streaming": True
+}
+
+MODE_MAX_TOKENS = {
+    "Legal Q&A": 1500,
+    "Drafting": 3000,
+    "Analysis": 2500
+}
