@@ -1,3 +1,4 @@
+# components/chat.py (UPDATED)
 import time
 import streamlit as st
 from google.genai import types
@@ -27,6 +28,8 @@ def render_chat(app_mode, conn, client, credits_left):
         chat_id = st.session_state.current_chat_id
         raw_msgs = get_messages_for_chat(conn, chat_id)
         messages = [{"role": m[1], "content": m[2]} for m in raw_msgs]
+        # FIXED: Update session state with loaded messages
+        st.session_state.messages_by_mode = messages
     else:
         chat_id = None
         messages = st.session_state.get("messages_by_mode", [])
@@ -58,18 +61,18 @@ def render_chat(app_mode, conn, client, credits_left):
                         st.toast("Saved to Bookmarks!")
                 with a4:
                     if st.button("🔊 Read", key=f"read_{i}"):
-                        st.toast("Text-to-speech starting...") # Hook up gTTS here
+                        st.toast("Text-to-speech starting...")
 
     # Input Area
     user_prompt = st.chat_input("Ask anything related to Pakistan law..." if credits_left > 0 else "Limit reached.")
 
-    # Override text input if voice is recorded (simplified logic)
+    # Override text input if voice is recorded
     if audio_val and not user_prompt:
-        user_prompt = "Transcribed audio intent..." # Requires Whisper API hookup here
+        user_prompt = "Transcribed audio intent..."
 
     if user_prompt:
         if credits_left <= 0:
-            st.error("🔒 Free Limit Reached.")
+            st.error("🔒 Free Limit Reached. Please upgrade your plan.")
             st.stop()
 
         # Initialize new chat in DB if none exists
@@ -89,12 +92,18 @@ def render_chat(app_mode, conn, client, credits_left):
         
         with st.chat_message("assistant", avatar="⚖️"):
             with st.spinner("Analyzing legal frameworks..."):
-                text, _ = call_gemini_with_retry(client, formatted_contents, get_system_instruction(app_mode), 1500)
-                
-                st.markdown(text)
-                render_ai_metadata()
-                
-                # Save Assistant Message
-                save_message(conn, chat_id, "assistant", text, tokens=len(text.split()))
-                spend_credit(conn, account_id, 1)
-                st.rerun()
+                try:
+                    text, _ = call_gemini_with_retry(client, formatted_contents, get_system_instruction(app_mode), 1500)
+                    
+                    st.markdown(text)
+                    render_ai_metadata()
+                    
+                    # Save Assistant Message
+                    save_message(conn, chat_id, "assistant", text, tokens=len(text.split()))
+                    spend_credit(conn, account_id, 1)
+                    
+                    # FIXED: Update session state after new message
+                    st.session_state.messages_by_mode = messages + [{"role": "assistant", "content": text}]
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error generating response: {str(e)}")

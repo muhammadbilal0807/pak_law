@@ -97,3 +97,10 @@ else:
         st.info("🔖 Bookmarks system connected to SQLite database.")
     elif app_mode == "Settings":
         st.info("⚙️ Settings: Configure preferences, theme, and data exports.")
+# app.py (UPDATED - add import and handle conversation tab)
+# Add this import at the top:
+from components.admin.admin_conversations import render_admin_conversations
+
+# In the admin routing section, add:
+elif admin_tab == "Conversations":
+    render_admin_conversations(conn)

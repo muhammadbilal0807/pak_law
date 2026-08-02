@@ -1,6 +1,8 @@
+# components/admin/admin_user_mgmt.py (UPDATED)
 import streamlit as st
 import pandas as pd
 from services.admin_service import log_audit_action
+from database.db import add_credits, get_user_credits
 
 def render_admin_user_mgmt(conn):
     st.markdown('<div class="admin-header">User & Role Management</div>', unsafe_allow_html=True)
@@ -51,9 +53,11 @@ def render_admin_user_mgmt(conn):
             user_row = conn.execute("SELECT id FROM accounts WHERE email = ?", (selected_email,)).fetchone()
             if user_row:
                 uid = user_row[0]
+                current_credits = get_user_credits(conn, uid)
+                st.info(f"Current Credits: {current_credits}")
                 credits_to_add = st.number_input("Credits to Add", min_value=1, value=50, step=5)
-                if st.button("Add Credits"):
-                    conn.execute("UPDATE users SET queries_used = queries_used - ? WHERE user_id = ?", (credits_to_add, uid))
-                    conn.commit()
+                if st.button("Add Credits", type="primary"):
+                    add_credits(conn, uid, credits_to_add)
                     log_audit_action(conn, st.session_state.user["id"], "TOPUP_CREDITS", f"Added {credits_to_add} credits to {selected_email}")
                     st.success(f"Added {credits_to_add} credits to {selected_email}")
+                    st.rerun()

@@ -1,3 +1,4 @@
+# components/admin/admin.py (UPDATED)
 import streamlit as st
 from config.settings import UPGRADE_CREDITS
 from utils.validators import sanitize_user_id
@@ -24,6 +25,7 @@ def render_admin_panel(conn):
                 sanitized_target = sanitize_user_id(target_id)
                 add_credits(conn, sanitized_target, int(amount))
                 st.success(f"Added {amount} credits to {sanitized_target}")
+                st.rerun()
 
             st.divider()
             st.markdown("**👁️ User Directory**")
@@ -32,14 +34,17 @@ def render_admin_panel(conn):
                 user_list = [
                     {
                         "User ID": row[0], 
-                        "Joined": row[1][:10], 
-                        "Queries": row[2]
+                        "Joined": row[1][:10] if row[1] else "N/A", 
+                        "Queries Used": row[2] if row[2] is not None else 0,
+                        "Email": row[3] if len(row) > 3 else "N/A",
+                        "Name": row[4] if len(row) > 4 else "N/A",
+                        "Role": row[5] if len(row) > 5 else "User",
+                        "Status": row[6] if len(row) > 6 else "Active"
                     } 
                     for row in all_users
                 ]
                 st.dataframe(user_list, use_container_width=True, hide_index=True)
             else:
                 st.caption("No active users.")
-
         elif pw:
             st.error("Authentication failed.")

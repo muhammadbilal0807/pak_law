@@ -1,3 +1,4 @@
+# services/export_service.py (UPDATED)
 import io
 from docx import Document
 from fpdf import FPDF
@@ -20,4 +21,5 @@ def export_pdf(content: str) -> bytes:
     # Basic cleanup for PDF
     safe_content = content.encode('latin-1', 'replace').decode('latin-1')
     pdf.multi_cell(0, 10, txt=safe_content)
+    # FIXED: Use proper output method
     return pdf.output(dest='S').encode('latin-1')

@@ -1,3 +1,4 @@
+# database/db.py (UPDATED)
 import sqlite3
 import uuid
 from datetime import datetime, timezone
@@ -29,6 +30,17 @@ def create_tables(conn):
             status TEXT DEFAULT 'Active',
             created_at TEXT,
             last_login TEXT
+        )
+    """)
+    
+    # User Settings Table (FIXED: Added missing table)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS settings (
+            account_id TEXT PRIMARY KEY,
+            theme TEXT DEFAULT 'Light',
+            language TEXT DEFAULT 'English',
+            notifications INTEGER DEFAULT 1,
+            FOREIGN KEY (account_id) REFERENCES accounts(id)
         )
     """)
     
@@ -82,7 +94,7 @@ def create_tables(conn):
             doc_name TEXT,
             file_type TEXT,
             chunk_content TEXT,
-            metadata JSON,
+            metadata TEXT,
             created_at TEXT
         )
     """)
@@ -164,7 +176,7 @@ def seed_defaults(conn):
     
     conn.commit()
 
-# --- Legacy Credit System Wrappers ---
+# --- Credit System Functions ---
 def remaining_credits(conn, user_id):
     from config.settings import FREE_QUERY_LIMIT
     cursor = conn.execute("SELECT queries_used FROM users WHERE user_id = ?", (user_id,))
@@ -182,6 +194,34 @@ def spend_credit(conn, user_id, amount=1):
                      (user_id, datetime.now(timezone.utc).isoformat(), amount))
     conn.commit()
 
+# FIXED: Added missing functions
+def get_all_users(conn):
+    """Get all users with their credit usage"""
+    return conn.execute("""
+        SELECT u.user_id, u.joined_at, u.queries_used, a.email, a.full_name, a.role, a.status
+        FROM users u
+        LEFT JOIN accounts a ON u.user_id = a.id
+        ORDER BY u.joined_at DESC
+    """).fetchall()
+
+def add_credits(conn, user_id, amount):
+    """Add credits to a user (decrease queries_used)"""
+    cursor = conn.execute("SELECT queries_used FROM users WHERE user_id = ?", (user_id,))
+    row = cursor.fetchone()
+    if row:
+        current_used = row[0]
+        new_used = max(0, current_used - amount)  # Don't go below 0
+        conn.execute("UPDATE users SET queries_used = ? WHERE user_id = ?", (new_used, user_id))
+    else:
+        conn.execute("INSERT INTO users (user_id, joined_at, queries_used) VALUES (?, ?, ?)", 
+                     (user_id, datetime.now(timezone.utc).isoformat(), 0))
+    conn.commit()
+
+def get_user_credits(conn, user_id):
+    """Get remaining credits for a user"""
+    return remaining_credits(conn, user_id)
+
+# --- Chat Functions ---
 def create_chat(conn, account_id, title, mode):
     chat_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
@@ -204,3 +244,8 @@ def get_chats_for_user(conn, account_id):
 
 def get_messages_for_chat(conn, chat_id):
     return conn.execute("SELECT id, role, content, created_at FROM messages WHERE chat_id = ? ORDER BY created_at ASC", (chat_id,)).fetchall()
+
+def delete_chat(conn, chat_id):
+    conn.execute("DELETE FROM messages WHERE chat_id = ?", (chat_id,))
+    conn.execute("DELETE FROM chats WHERE id = ?", (chat_id,))
+    conn.commit()

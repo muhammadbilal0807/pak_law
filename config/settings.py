@@ -1,43 +1,28 @@
+# config/settings.py
 import os
 
-PAGE_TITLE = "Pak Law AI — Enterprise Platform"
-FREE_QUERY_LIMIT = 5
-COOLDOWN_SECONDS = 3.0
-MAX_HISTORY_MESSAGES = 10
-
+# App Configuration
+PAGE_TITLE = "Pak Law AI - Legal Assistant"
 MODES = ["Legal Q&A", "Drafting", "Analysis"]
+ADMIN_ROLES = ["Admin", "Super Admin"]
 
-# Pricing & Upgrade Configuration
-UPGRADE_CREDITS = 50
-UPGRADE_PRICE_PKR = 1500
-JAZZCASH_NUMBER = "0303-7154605"
-EASYPAISA_NUMBER = "0339-4111973"
-WHATSAPP_NUMBER = "+923037154605"
+# Credit System
+FREE_QUERY_LIMIT = 10  # Free tier queries
+UPGRADE_CREDITS = 50   # Default credits for upgrades
 
-# RBAC Roles
-ROLE_USER = "User"
-ROLE_MODERATOR = "Moderator"
-ROLE_ADMIN = "Admin"
-ROLE_SUPER_ADMIN = "Super Admin"
-ADMIN_ROLES = [ROLE_ADMIN, ROLE_SUPER_ADMIN]
+# AI Model Configuration
+PRIMARY_MODEL = "gemini-2.5-flash"
+FALLBACK_MODEL = "gemini-2.5-pro"
 
-# Gemini AI Hyperparameters & Defaults
 DEFAULT_AI_CONFIG = {
-    "model_name": "gemini-3.6-flash",
-    "temperature": 0.2,
-    "top_p": 0.95,
-    "top_k": 40,
-    "max_tokens": 2048,
-    "context_window": 8192,
-    "streaming": True
+    "model_name": "gemini-2.5-flash",
+    "temperature": 0.7,
+    "max_tokens": 1500,
+    "thinking_level": "LOW"
 }
 
-# Model Exports
-PRIMARY_MODEL = DEFAULT_AI_CONFIG["model_name"]
-FALLBACK_MODEL = "gemini-3.5-flash"  # Backup model if primary fails or hits rate limits
+# Security
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")  # Change in production!
 
-MODE_MAX_TOKENS = {
-    "Legal Q&A": 1500,
-    "Drafting": 3000,
-    "Analysis": 2500
-}
+# Database
+DB_FILE = "pak_law_ai.db"
