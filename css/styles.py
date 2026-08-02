@@ -55,6 +55,25 @@ def load_css():
         }
 
         /* ---------------------------------------------------------
+           1c. DISABLE STREAMLIT'S "STALE ELEMENT" FADE
+           Streamlit automatically dims every on-screen element to a
+           low opacity while a script rerun is in flight (that's the
+           red/black progress bar you see at the very top of the
+           page). This is normal Streamlit behaviour, but this app
+           calls st.rerun() very frequently -- after every chat
+           message, admin action, and login -- so users kept catching
+           the app mid-fade, which looked like text randomly turning
+           invisible. We force full opacity at all times so text
+           stays legible through every rerun.
+        --------------------------------------------------------- */
+        [data-stale="true"],
+        .element-container.stale-element,
+        div[class*="stale-element"] {
+            opacity: 1 !important;
+            transition: none !important;
+        }
+
+        /* ---------------------------------------------------------
            2. ANIMATIONS
         --------------------------------------------------------- */
         @keyframes fadeIn {
@@ -316,5 +335,21 @@ def load_css():
             border-color: #0F766E !important;
             box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.2) !important;
         }
+
+        /* ---------------------------------------------------------
+           8. BONUS CREDITS BANNER (non-blocking)
+        --------------------------------------------------------- */
+        .bonus-card {
+            background: linear-gradient(135deg, #FDE68A 0%, #FCD34D 100%);
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 0.75rem;
+            border: 1px solid #F59E0B;
+        }
+        .bonus-card-text {
+            color: #78350F !important;
+            font-size: 0.95rem;
+        }
+        .bonus-card-text * { color: #78350F !important; }
         </style>
     """, unsafe_allow_html=True)

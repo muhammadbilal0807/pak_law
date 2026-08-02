@@ -22,7 +22,11 @@ def render_sidebar(conn, credits_left):
         st.markdown("<br>", unsafe_allow_html=True)
 
         capped_credits = max(credits_left, 0)
-        progress_val = min(capped_credits, FREE_QUERY_LIMIT) / FREE_QUERY_LIMIT if capped_credits <= FREE_QUERY_LIMIT else 1.0
+        # Denominator scales up automatically for anyone who claimed the
+        # +5 bonus banner (5 -> 10 total), instead of capping visually at
+        # the base FREE_QUERY_LIMIT.
+        progress_max = max(FREE_QUERY_LIMIT, capped_credits)
+        progress_val = capped_credits / progress_max if progress_max else 0
         
         st.markdown(f"""
             <div class="credit-card">

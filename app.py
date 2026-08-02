@@ -4,7 +4,7 @@ from config.settings import PAGE_TITLE, MODES
 from css.styles import load_css
 from database.db import get_db, remaining_credits
 from services.gemini_service import get_client
-from components.onboarding import render_onboarding
+from components.onboarding import init_guest_session, render_bonus_banner
 from components.sidebar import render_sidebar
 from components.header import render_header
 from components.chat import render_chat
@@ -22,12 +22,14 @@ if "messages_by_mode" not in st.session_state:
     st.session_state.messages_by_mode = {m: [] for m in MODES}
 if "history_titles" not in st.session_state:
     st.session_state.history_titles = []
-if "user_id" not in st.session_state:
-    st.session_state.user_id = st.query_params.get("uid")
 if "last_request_ts" not in st.session_state:
     st.session_state.last_request_ts = 0.0
 if "preset_prompt" not in st.session_state:
     st.session_state.preset_prompt = None
+
+# Silently assigns every visitor a guest ID + free credits.
+# No signup wall -- see components/onboarding.py.
+init_guest_session()
 
 # =====================================================================
 # 3. SERVICES INIT
@@ -41,12 +43,7 @@ if "has_logged_view" not in st.session_state:
     st.session_state.has_logged_view = True
 
 # =====================================================================
-# 4. ONBOARDING
-# =====================================================================
-render_onboarding()
-
-# =====================================================================
-# 5. MAIN APPLICATION
+# 4. MAIN APPLICATION
 # =====================================================================
 user_id = st.session_state.user_id
 credits_left = remaining_credits(conn, user_id)
@@ -54,4 +51,5 @@ credits_left = remaining_credits(conn, user_id)
 app_mode = render_sidebar(conn, credits_left)
 
 render_header(app_mode)
+render_bonus_banner(conn)   # optional, dismissible +5 credit offer
 render_chat(app_mode, conn, client, credits_left)
