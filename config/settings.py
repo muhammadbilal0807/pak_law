@@ -23,7 +23,7 @@ ADMIN_ROLES = [ROLE_ADMIN, ROLE_SUPER_ADMIN]
 
 # Gemini AI Hyperparameters & Defaults
 DEFAULT_AI_CONFIG = {
-    "model_name": "gemini-3.5-flash",
+    "model_name": "gemini-3.6-flash",
     "temperature": 0.2,
     "top_p": 0.95,
     "top_k": 40,
@@ -32,8 +32,9 @@ DEFAULT_AI_CONFIG = {
     "streaming": True
 }
 
-# Primary Model Export (Resolves the ImportError)
+# Model Exports
 PRIMARY_MODEL = DEFAULT_AI_CONFIG["model_name"]
+FALLBACK_MODEL = "gemini-3.5-flash"  # Backup model if primary fails or hits rate limits
 
 MODE_MAX_TOKENS = {
     "Legal Q&A": 1500,
